@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omnik Import Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --royal: #1a3a6b;
+    --royal-mid: #1e4d9b;
+    --royal-light: #2563c7;
+    --sky: #dbeafe;
+    --sky-soft: #eff6ff;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --text: #1e293b;
+    --text-mid: #475569;
+    --text-light: #94a3b8;
+    --border: #cbd5e1;
+    --border-light: #e2e8f0;
+    --white: #ffffff;
+    --bg: #f0f6ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cambria', 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--royal-mid) 50%, var(--royal-light) 100%);
+  }
+
+  .login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 360px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    text-align: center;
+  }
+
+  .login-logo {
+    width: 56px;
+    height: 56px;
+    background: var(--royal);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 22px;
+    color: white;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .login-card h1 { font-size: 20px; font-weight: 700; color: var(--royal); margin-bottom: 4px; }
+  .login-card p { font-size: 13px; color: var(--text-light); margin-bottom: 32px; }
+
+  .pin-label { font-size: 12px; font-weight: 600; color: var(--text-mid); text-align: left; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .pin-dots {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .pin-dot {
+    width: 48px;
+    height: 56px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--royal);
+    transition: border-color 0.2s;
+  }
+
+  .pin-dot.active { border-color: var(--royal-light); background: var(--sky-soft); }
+  .pin-dot.filled { border-color: var(--royal); background: var(--sky); }
+
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .pin-key {
+    height: 52px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 10px;
+    background: white;
+    font-size: 18px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pin-key:hover { background: var(--sky-soft); border-color: var(--royal-light); }
+  .pin-key:active { transform: scale(0.95); background: var(--sky); }
+  .pin-key.del { font-size: 14px; color: var(--text-mid); }
+
+  .login-error { font-size: 12px; color: var(--danger); margin-top: 8px; min-height: 18px; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; min-height: 100vh; }
+
+  .topbar {
+    background: var(--royal);
+    color: white;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { font-size: 16px; font-weight: 700; letter-spacing: -0.5px; }
+  .topbar-logo span { opacity: 0.6; font-weight: 400; }
+  .topbar-user { font-size: 12px; opacity: 0.8; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 12px; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: 'Cambria', 'Georgia', serif; transition: background 0.2s; }
+  .btn-logout:hover { background: rgba(255,255,255,0.25); }
+
+  .main-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+  .stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1.5px solid var(--border-light);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--royal); font-family: 'DM Mono', monospace; }
+  .stat-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .toolbar-left { display: flex; gap: 10px; flex: 1; }
+
+  .search-box {
+    flex: 1;
+    max-width: 320px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 9px 14px 9px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: 'Cambria', 'Georgia', serif;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus { border-color: var(--royal-light); }
+  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 14px; }
+
+  .filter-select {
+    padding: 9px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: 'Cambria', 'Georgia', serif;
+    background: white;
+    outline: none;
+    cursor: pointer;
+    color: var(--text);
+  }
+
+  .btn-primary {
+    background: var(--royal);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Cambria', 'Georgia', serif;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary:hover { background: var(--royal-mid); }
+
+  /* ── FILES TABLE ── */
+  .files-table-wrap {
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--border-light);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--royal); color: white; }
+  th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { cursor: pointer; transition: background 0.15s; }
+  tbody tr:hover { background: var(--sky-soft); }
+
+  .file-num { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--royal); font-size: 13px; }
+  .grade-badge { background: var(--sky); color: var(--royal-mid); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .supplier-text { color: var(--text-mid); font-size: 12px; }
+
+  .progress-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .progress-bar { height: 6px; background: var(--border-light); border-radius: 3px; flex: 1; min-width: 80px; }
+  .progress-fill { height: 100%; border-radius: 3px; background: var(--royal-light); transition: width 0.3s; }
+  .progress-text { font-size: 11px; color: var(--text-light); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  .flag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .flag-red { background: var(--danger-light); color: var(--danger); }
+  .flag-orange { background: var(--warning-light); color: #b45309; }
+  .flag-green { background: var(--success-light); color: #065f46; }
+
+  .eta-text { font-size: 12px; color: var(--text-mid); font-family: 'DM Mono', monospace; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 30, 60, 0.5);
+    z-index: 200;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 860px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+    margin: auto;
+  }
+
+  .modal-header {
+    background: var(--royal);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 18px 18px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-header h2 { font-size: 16px; font-weight: 700; }
+  .modal-header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+  .modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: rgba(255,255,255,0.3); }
+
+  .modal-body { padding: 24px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-mid); }
+
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-size: 13px;
+    font-family: 'Cambria', 'Georgia', serif;
+    outline: none;
+    transition: border-color 0.2s;
+    color: var(--text);
+  }
+
+  .form-group input:focus, .form-group select:focus { border-color: var(--royal-light); }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--royal);
+    margin: 20px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid var(--border-light);
+  }
+
+  /* Checklist */
+  .checklist { display: flex; flex-direction: column; gap: 6px; }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border-light);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .check-item:hover { border-color: var(--royal-light); background: var(--sky-soft); }
+  .check-item.checked { background: var(--success-light); border-color: var(--success); }
+  .check-item.locked { opacity: 0.5; cursor: not-allowed; }
+  .check-item.admin-only { border-left: 3px solid var(--accent); }
+
+  .check-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--success); margin-top: 1px; flex-shrink: 0; cursor: pointer; }
+  .check-item-label { font-size: 13px; font-weight: 500; }
+  .check-item-meta { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+  .check-item-badge { font-size: 10px; background: var(--accent-light); color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; }
+
+  /* Containers section */
+  .containers-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .container-card {
+    border: 1.5px solid var(--border-light);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .container-card-header {
+    background: var(--sky-soft);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1.5px solid var(--border-light);
+  }
+
+  .container-card-header:hover { background: var(--sky); }
+
+  .container-num { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--royal); }
+  .container-status { display: flex; gap: 6px; align-items: center; }
+
+  .container-card-body { padding: 14px; display: none; }
+  .container-card-body.open { display: block; }
+
+  .container-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+
+  .mini-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .mini-check:hover { border-color: var(--royal-light); background: var(--sky-soft); }
+  .mini-check.checked { background: var(--success-light); border-color: var(--success); }
+  .mini-check input { width: 14px; height: 14px; accent-color: var(--success); cursor: pointer; }
+
+  .whatsapp-btn {
+    background: #25D366;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Cambria', 'Georgia', serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+
+  .whatsapp-btn:hover { background: #1ebe5a; }
+  .whatsapp-btn.hidden { display: none; }
+
+  .date-input-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .date-input-row label { font-size: 11px; color: var(--text-mid); font-weight: 600; white-space: nowrap; }
+  .date-input-row input { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 12px; font-family: 'DM Mono', monospace; outline: none; }
+  .date-input-row input:focus { border-color: var(--royal-light); }
+
+  .drive-link-row { display: flex; gap: 8px; margin-top: 8px; }
+  .drive-link-row input { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 12px; outline: none; font-family: 'Cambria', 'Georgia', serif; }
+  .drive-link-row input:focus { border-color: var(--royal-light); }
+  .drive-link-row a { font-size: 12px; color: var(--royal-light); text-decoration: none; padding: 6px 10px; border: 1.5px solid var(--border-light); border-radius: 7px; white-space: nowrap; }
+  .drive-link-row a:hover { background: var(--sky-soft); }
+
+  .flag-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .flag-banner.red { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+  .flag-banner.orange { background: var(--warning-light); color: #b45309; border: 1px solid #fcd34d; }
+
+  /* ETA log */
+  .eta-log { background: var(--sky-soft); border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+  .eta-log-title { font-size: 11px; font-weight: 700; color: var(--royal); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .eta-log-entry { font-size: 11px; color: var(--text-mid); padding: 3px 0; border-bottom: 1px solid var(--border-light); font-family: 'DM Mono', monospace; }
+  .eta-log-entry:last-child { border-bottom: none; }
+
+  /* Audit trail */
+  .audit-trail { background: var(--sky-soft); border-radius: 8px; padding: 10px 12px; margin-top: 12px; max-height: 160px; overflow-y: auto; }
+  .audit-title { font-size: 11px; font-weight: 700; color: var(--royal); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .audit-entry { font-size: 11px; color: var(--text-mid); padding: 3px 0; border-bottom: 1px solid var(--border-light); font-family: 'DM Mono', monospace; }
+  .audit-entry:last-child { border-bottom: none; }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1.5px solid var(--border-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Cambria', 'Georgia', serif;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--royal-light); color: var(--royal); }
+
+  .add-container-btn {
+    background: var(--sky-soft);
+    border: 1.5px dashed var(--royal-light);
+    color: var(--royal);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Cambria', 'Georgia', serif;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .add-container-btn:hover { background: var(--sky); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+  .empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text-mid); }
+  .empty-state p { font-size: 13px; }
+
+  /* New file modal */
+  #new-file-modal .modal { max-width: 600px; }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .container-checks { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">OL</div>
+    <h1>Omnik Import Tracker</h1>
+    <p>Enter your PIN to continue</p>
+    <div class="pin-label">PIN</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinPress('')"></button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Omnik <span>Import Tracker</span></div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Files</div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-sub">Active shipments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Awaiting Arrival</div>
+        <div class="stat-value" id="stat-awaiting">0</div>
+        <div class="stat-sub">Not yet at port</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value" id="stat-inprogress">0</div>
+        <div class="stat-sub">Partially offloaded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">⚠ Flagged</div>
+        <div class="stat-value" id="stat-flagged" style="color:var(--danger)">0</div>
+        <div class="stat-sub">Needs attention</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search file, grade, supplier, container…" oninput="renderTable()">
+        </div>
+        <select class="filter-select" id="filter-month" onchange="renderTable()">
+          <option value="">All ETAs</option>
+        </select>
+        <select class="filter-select" id="filter-supplier" onchange="renderTable()">
+          <option value="">All Suppliers</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="openNewFileModal()">＋ New File</button>
+    </div>
+
+    <div class="files-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>File #</th>
+            <th>Grade / Material</th>
+            <th>Supplier</th>
+            <th>Form M</th>
+            <th>Containers</th>
+            <th>ETA</th>
+            <th>Progress</th>
+            <th>Flags</th>
+          </tr>
+        </thead>
+        <tbody id="files-tbody"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none">
+        <h3>No files yet</h3>
+        <p>Click "+ New File" to add your first shipment</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILE DETAIL MODAL -->
+<div class="modal-overlay" id="file-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-file-title">File Details</h2>
+        <p id="modal-file-sub"></p>
+      </div>
+      <button class="modal-close" onclick="closeFileModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeFileModal()">Close</button>
+      <button class="btn-primary" onclick="saveFile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW FILE MODAL -->
+<div class="modal-overlay" id="new-file-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div><h2>New File</h2><p>Add a new import shipment</p></div>
+      <button class="modal-close" onclick="closeNewFileModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>File Number *</label>
+          <input type="text" id="nf-filenum" placeholder="e.g. 1325A">
+        </div>
+        <div class="form-group">
+          <label>Form M Number</label>
+          <input type="text" id="nf-formm" placeholder="e.g. MF20260001845">
+        </div>
+        <div class="form-group">
+          <label>Supplier *</label>
+          <input type="text" id="nf-supplier" placeholder="e.g. ExxonMobil">
+        </div>
+        <div class="form-group">
+          <label>Sales Order / PFI #</label>
+          <input type="text" id="nf-pfi" placeholder="e.g. 13362526">
+        </div>
+        <div class="form-group">
+          <label>Grade / Material *</label>
+          <input type="text" id="nf-grade" placeholder="e.g. LL1001XBU">
+        </div>
+        <div class="form-group">
+          <label>Metric Tons</label>
+          <input type="number" id="nf-mt" placeholder="e.g. 247.5">
+        </div>
+        <div class="form-group">
+          <label>BL Number</label>
+          <input type="text" id="nf-bl" placeholder="e.g. MEDUWJ653411">
+        </div>
+        <div class="form-group">
+          <label>Containers (e.g. 10x40)</label>
+          <input type="text" id="nf-containers" placeholder="e.g. 10x40">
+        </div>
+        <div class="form-group">
+          <label>ETA</label>
+          <input type="date" id="nf-eta">
+        </div>
+        <div class="form-group">
+          <label>Bank</label>
+          <input type="text" id="nf-bank" placeholder="e.g. ACCESS">
+        </div>
+        <div class="form-group">
+          <label>Agent</label>
+          <input type="text" id="nf-agent" placeholder="e.g. ASALADE">
+        </div>
+        <div class="form-group">
+          <label>CGD Invoice Number</label>
+          <input type="text" id="nf-cgd" placeholder="e.g. CGD: 1803">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeNewFileModal()">Cancel</button>
+      <button class="btn-primary" onclick="createFile()">Create File</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const USERS = {
+  '6369': { name: 'Shivam', role: 'admin' }
+};
+
+const ROLES = {
+  admin: { canTickAll: true, canUntick: true, canEditETA: true, seeFX: true },
+  supervisor: { canTickAll: true, canUntick: false, canEditETA: true, seeFX: false },
+  junior: { canTickAll: false, canUntick: false, canEditETA: false, seeFX: false, onlyTick: ['ecd_received', 'ecd_submitted'] }
+};
+
+let currentUser = null;
+let files = JSON.parse(localStorage.getItem('omnik_files') || '[]');
+let currentFileId = null;
+
+const CHECKLIST_ITEMS = [
+  { id: 'order_booked', label: 'Order booked', adminOnly: false },
+  { id: 'pfi', label: 'Sales Order / PFI received', adminOnly: false },
+  { id: 'formm', label: 'Form M opened', adminOnly: false },
+  { id: 'docs_copies', label: 'Copies of shipment documents received', adminOnly: false },
+  { id: 'docs_originals_dubai', label: 'Original documents received in Dubai', adminOnly: false },
+  { id: 'cgd', label: 'CGD invoice generated', adminOnly: false },
+  { id: 'agent', label: 'Agent assigned', adminOnly: false },
+  { id: 'paar', label: 'PAAR issued', adminOnly: false },
+  { id: 'docs_originals_lagos', label: 'Original documents received in Lagos', adminOnly: false },
+  { id: 'duty', label: 'Duty paid', adminOnly: false },
+  { id: 'shipping_charges', label: 'Shipping line charges paid', adminOnly: false },
+  { id: 'ecd_received', label: 'ECD received from agent', adminOnly: false },
+  { id: 'ecd_submitted', label: 'ECD submitted to bank', adminOnly: false },
+  { id: 'fx', label: 'FX purchased', adminOnly: true }
+];
+
+const CONTAINER_CHECKS = [
+  { id: 'arrived', label: 'Arrived at port' },
+  { id: 'terminal', label: 'Terminal paid' },
+  { id: 'offloaded', label: 'Offloaded at warehouse' },
+  { id: 'photo', label: 'Photo/video of empty container' },
+  { id: 'returned', label: 'Empty container returned' }
+];
+
+// ── PIN LOGIN ──
+let pin = '';
+
+function pinPress(d) {
+  if (!d) return;
+  if (pin.length >= 4) return;
+  pin += d;
+  updateDots();
+  if (pin.length === 4) setTimeout(tryLogin, 200);
+}
+
+function pinDel() {
+  pin = pin.slice(0, -1);
+  updateDots();
+  document.getElementById('login-error').textContent = '';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.className = 'pin-dot';
+    if (i < pin.length) { dot.className += ' filled'; dot.textContent = '●'; }
+    else if (i === pin.length) { dot.className += ' active'; dot.textContent = ''; }
+    else { dot.textContent = ''; }
+  }
+}
+
+function tryLogin() {
+  if (USERS[pin]) {
+    currentUser = { pin, ...USERS[pin] };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+    renderTable();
+    updateStats();
+  } else {
+    document.getElementById('login-error').textContent = 'Incorrect PIN. Try again.';
+    pin = '';
+    updateDots();
+  }
+}
+
+function logout() {
+  pin = '';
+  currentUser = null;
+  updateDots();
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-error').textContent = '';
+}
+
+// ── SAVE ──
+function saveData() {
+  localStorage.setItem('omnik_files', JSON.stringify(files));
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('stat-total').textContent = files.length;
+  let awaiting = 0, inprog = 0, flagged = 0;
+  files.forEach(f => {
+    const containers = f.containers || [];
+    const anyArrived = containers.some(c => c.arrived_date);
+    const allOffloaded = containers.length > 0 && containers.every(c => c.checks?.offloaded);
+    if (!anyArrived) awaiting++;
+    else if (!allOffloaded) inprog++;
+    if (hasFlags(f)) flagged++;
+  });
+  document.getElementById('stat-awaiting').textContent = awaiting;
+  document.getElementById('stat-inprogress').textContent = inprog;
+  document.getElementById('stat-flagged').textContent = flagged;
+}
+
+function hasFlags(f) {
+  const today = new Date();
+  return (f.containers || []).some(c => {
+    if (!c.arrived_date) return false;
+    const arrived = new Date(c.arrived_date);
+    const days = Math.floor((today - arrived) / 86400000);
+    if (!c.checks?.terminal && days >= 5) return true;
+    if (!c.checks?.returned && days >= 21) return true;
+    return false;
+  });
+}
+
+function getFlags(c) {
+  if (!c.arrived_date) return null;
+  const today = new Date();
+  const arrived = new Date(c.arrived_date);
+  const days = Math.floor((today - arrived) / 86400000);
+  if (!c.checks?.returned && days >= 21) return { level: 'red', msg: `${days}d — empty not returned` };
+  if (!c.checks?.terminal && days >= 5) return { level: 'orange', msg: `${days}d — terminal unpaid` };
+  return null;
+}
+
+// ── FILTERS ──
+function populateFilters() {
+  const months = new Set();
+  const suppliers = new Set();
+  files.forEach(f => {
+    if (f.eta) {
+      const d = new Date(f.eta);
+      months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    if (f.supplier) suppliers.add(f.supplier);
+  });
+  const mSel = document.getElementById('filter-month');
+  const curM = mSel.value;
+  mSel.innerHTML = '<option value="">All ETAs</option>';
+  [...months].sort().forEach(m => {
+    const [y, mo] = m.split('-');
+    const label = new Date(y, mo-1).toLocaleString('default', {month:'long', year:'numeric'});
+    mSel.innerHTML += `<option value="${m}" ${curM===m?'selected':''}>${label}</option>`;
+  });
+  const sSel = document.getElementById('filter-supplier');
+  const curS = sSel.value;
+  sSel.innerHTML = '<option value="">All Suppliers</option>';
+  [...suppliers].sort().forEach(s => {
+    sSel.innerHTML += `<option value="${s}" ${curS===s?'selected':''}>${s}</option>`;
+  });
+}
+
+// ── TABLE ──
+function renderTable() {
+  populateFilters();
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const mFilter = document.getElementById('filter-month').value;
+  const sFilter = document.getElementById('filter-supplier').value;
+
+  let filtered = files.filter(f => {
+    const matchQ = !q || [f.filenum, f.grade, f.supplier, f.formm, f.cgd, f.bl, f.agent, ...(f.containers||[]).map(c=>c.num)]
+      .some(v => v && v.toLowerCase().includes(q));
+    const matchM = !mFilter || (f.eta && f.eta.startsWith(mFilter));
+    const matchS = !sFilter || f.supplier === sFilter;
+    return matchQ && matchM && matchS;
+  });
+
+  const tbody = document.getElementById('files-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('empty-state').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(f => {
+    const checklist = f.checklist || {};
+    const totalChecks = CHECKLIST_ITEMS.filter(i => !i.adminOnly || currentUser?.role === 'admin').length;
+    const doneChecks = CHECKLIST_ITEMS.filter(i => (!i.adminOnly || currentUser?.role === 'admin') && checklist[i.id]).length;
+    const pct = totalChecks ? Math.round(doneChecks / totalChecks * 100) : 0;
+
+    const containers = f.containers || [];
+    const flags = containers.map(c => getFlags(c)).filter(Boolean);
+    const worstFlag = flags.find(f => f.level === 'red') || flags.find(f => f.level === 'orange');
+
+    const eta = f.eta ? new Date(f.eta).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) : '—';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="file-num">${f.filenum}</span></td>
+      <td><span class="grade-badge">${f.grade || '—'}</span></td>
+      <td><span class="supplier-text">${f.supplier || '—'}</span></td>
+      <td><span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-mid)">${f.formm || '—'}</span></td>
+      <td><span style="font-size:12px">${containers.length} container${containers.length!==1?'s':''}</span></td>
+      <td><span class="eta-text">${eta}</span></td>
+      <td>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span class="progress-text">${pct}%</span>
+        </div>
+      </td>
+      <td>${worstFlag ? `<span class="flag flag-${worstFlag.level}">⚠ ${worstFlag.msg}</span>` : '<span style="font-size:12px;color:var(--text-light)">—</span>'}</td>
+    `;
+    tr.onclick = () => openFileModal(f.id);
+    tbody.appendChild(tr);
+  });
+
+  updateStats();
+}
+
+// ── NEW FILE ──
+function openNewFileModal() {
+  document.getElementById('new-file-modal').classList.add('open');
+}
+
+function closeNewFileModal() {
+  document.getElementById('new-file-modal').classList.remove('open');
+  ['nf-filenum','nf-formm','nf-supplier','nf-pfi','nf-grade','nf-mt','nf-containers','nf-eta','nf-bank','nf-agent','nf-bl','nf-cgd'].forEach(id => document.getElementById(id).value = '');
+}
+
+function createFile() {
+  const filenum = document.getElementById('nf-filenum').value.trim();
+  const supplier = document.getElementById('nf-supplier').value.trim();
+  const grade = document.getElementById('nf-grade').value.trim();
+  if (!filenum || !supplier || !grade) { alert('File number, supplier and grade are required.'); return; }
+  if (files.find(f => f.filenum === filenum)) { alert('A file with this number already exists.'); return; }
+
+  const containerSpec = document.getElementById('nf-containers').value.trim();
+  const containers = [];
+  if (containerSpec) {
+    const match = containerSpec.match(/^(\d+)x/i);
+    const count = match ? parseInt(match[1]) : 1;
+    for (let i = 0; i < count; i++) {
+      containers.push({ id: `c_${Date.now()}_${i}`, num: '', checks: {}, arrived_date: '', offload_date: '', return_date: '', drive_link: '' });
+    }
+  }
+
+  const file = {
+    id: `f_${Date.now()}`,
+    filenum,
+    formm: document.getElementById('nf-formm').value.trim(),
+    supplier,
+    pfi: document.getElementById('nf-pfi').value.trim(),
+    grade,
+    mt: document.getElementById('nf-mt').value.trim(),
+    containerSpec,
+    containers,
+    eta: document.getElementById('nf-eta').value,
+    bank: document.getElementById('nf-bank').value.trim(),
+    agent: document.getElementById('nf-agent').value.trim(),
+    bl: document.getElementById('nf-bl').value.trim(),
+    cgd: document.getElementById('nf-cgd').value.trim(),
+    checklist: {},
+    etaLog: [],
+    auditLog: [],
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser.name
+  };
+
+  addAudit(file, `File created by ${currentUser.name}`);
+  files.push(file);
+  saveData();
+  renderTable();
+  closeNewFileModal();
+  openFileModal(file.id);
+}
+
+// ── FILE MODAL ──
+function openFileModal(id) {
+  currentFileId = id;
+  const f = files.find(f => f.id === id);
+  if (!f) return;
+  document.getElementById('modal-file-title').textContent = `File ${f.filenum}`;
+  document.getElementById('modal-file-sub').textContent = `${f.grade || ''} · ${f.supplier || ''} · ${f.mt || ''}MT`;
+  renderModalBody(f);
+  document.getElementById('file-modal').classList.add('open');
+}
+
+function closeFileModal() {
+  document.getElementById('file-modal').classList.remove('open');
+  currentFileId = null;
+}
+
+function renderModalBody(f) {
+  const role = ROLES[currentUser.role];
+  const checklist = f.checklist || {};
+  const today = new Date();
+
+  let html = '';
+
+  // File info row
+  html += `<div class="form-grid" style="margin-bottom:4px">
+    <div class="form-group"><label>File Number</label><input type="text" value="${f.filenum}" readonly style="background:var(--sky-soft);color:var(--text-mid)"></div>
+    <div class="form-group"><label>Form M</label><input type="text" id="edit-formm" value="${f.formm||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>Supplier</label><input type="text" id="edit-supplier" value="${f.supplier||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>Grade / Material</label><input type="text" id="edit-grade" value="${f.grade||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>Sales Order / PFI #</label><input type="text" id="edit-pfi" value="${f.pfi||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>BL Number</label><input type="text" id="edit-bl" value="${f.bl||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>CGD Invoice #</label><input type="text" id="edit-cgd" value="${f.cgd||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>Bank</label><input type="text" id="edit-bank" value="${f.bank||''}" ${role.canTickAll?'':'readonly'}></div>
+    <div class="form-group"><label>Agent</label><input type="text" id="edit-agent" value="${f.agent||''}" ${role.canTickAll?'':'readonly'}></div>
+  </div>`;
+
+  // ETA
+  html += `<div class="section-title">ETA</div>`;
+  if (role.canEditETA) {
+    html += `<div class="date-input-row"><label>ETA Date:</label><input type="date" id="edit-eta" value="${f.eta||''}" onchange="updateETA(this.value)"></div>`;
+  } else {
+    html += `<div style="font-size:13px;font-family:'DM Mono',monospace;color:var(--text-mid)">${f.eta || 'Not set'}</div>`;
+  }
+  if (f.etaLog && f.etaLog.length) {
+    html += `<div class="eta-log" style="margin-top:10px"><div class="eta-log-title">ETA Change Log</div>`;
+    f.etaLog.forEach(e => { html += `<div class="eta-log-entry">${e}</div>`; });
+    html += `</div>`;
+  }
+
+  // Checklist
+  html += `<div class="section-title">Checklist</div><div class="checklist">`;
+  CHECKLIST_ITEMS.forEach(item => {
+    if (item.adminOnly && !role.seeFX) return;
+    const checked = checklist[item.id];
+    const checkDate = f.checklistDates?.[item.id] || '';
+    const canTick = currentUser.role === 'admin' ||
+      (currentUser.role === 'supervisor' && item.id !== 'fx') ||
+      (currentUser.role === 'junior' && ['ecd_received','ecd_submitted'].includes(item.id));
+    const adminBadge = item.adminOnly ? `<span class="check-item-badge">Admin</span>` : '';
+    const displayDate = checkDate ? formatDate(checkDate) : '';
+    html += `<div class="check-item ${checked?'checked':''} ${!canTick?'locked':''}">
+      <input type="checkbox" id="chk-${item.id}" ${checked?'checked':''} ${!canTick?'disabled':''} onclick="toggleCheck('${item.id}', ${canTick})">
+      <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div class="check-item-label">${item.label}${adminBadge}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          ${checked ? `<span style="font-size:11px;color:var(--text-light);font-family:'DM Mono',monospace">${displayDate}</span>` : ''}
+          <input type="text" placeholder="dd/mm/yyyy" value="${checkDate ? formatDate(checkDate) : ''}" ${!canTick?'disabled':''} onchange="updateCheckDateText('${item.id}', this.value)" onclick="event.stopPropagation()" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;outline:none;width:100px;${!canTick?'opacity:0.4;cursor:not-allowed':''}">
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Containers
+  html += `<div class="section-title">Containers (${(f.containers||[]).length})</div>`;
+  html += `<div class="containers-list" id="containers-list">`;
+
+  (f.containers || []).forEach((c, idx) => {
+    const flag = getFlags(c);
+    let flagHtml = '';
+    if (flag) flagHtml = `<div class="flag-banner ${flag.level}">⚠ ${flag.msg}</div>`;
+
+    const terminalPaid = c.checks?.terminal;
+    const waBtn = terminalPaid ? `<button class="whatsapp-btn" onclick="sendWhatsapp('${f.filenum}', '${c.num||'#'+(idx+1)}', '${c.terminal_date||''}', event)">📱 WhatsApp</button>` : '';
+
+    html += `<div class="container-card">
+      <div class="container-card-header" onclick="toggleContainer('cont-${idx}')">
+        <div>
+          <span class="container-num">${c.num || `Container ${idx+1}`}</span>
+          <input type="text" placeholder="Container #" value="${c.num||''}" id="cnum-${idx}" onclick="event.stopPropagation()" oninput="updateContainerNum(${idx}, this.value)" style="margin-left:10px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;width:160px">
+        </div>
+        <div class="container-status">
+          ${flag ? `<span class="flag flag-${flag.level}">⚠</span>` : ''}
+          <span style="font-size:12px;color:var(--text-light)">${Object.values(c.checks||{}).filter(Boolean).length}/5 ✓</span>
+          <span style="font-size:12px">▾</span>
+        </div>
+      </div>
+      <div class="container-card-body" id="cont-${idx}">
+        ${flagHtml}
+        <div class="container-checks">`;
+
+    CONTAINER_CHECKS.forEach(cc => {
+      const checked = c.checks?.[cc.id];
+      const cDate = c.checkDates?.[cc.id] || '';
+      const displayDate = cDate ? formatDate(cDate) : '';
+      html += `<div class="mini-check ${checked?'checked':''}">
+        <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();toggleContainerCheck(${idx}, '${cc.id}')">
+        <span style="flex:1">${cc.label}</span>
+        <input type="text" placeholder="dd/mm/yyyy" value="${cDate ? formatDate(cDate) : ''}" onchange="updateContainerCheckDateText(${idx},'${cc.id}',this.value)" onclick="event.stopPropagation()" style="padding:2px 5px;border:1px solid var(--border);border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;outline:none;width:90px">
+      </div>`;
+    });
+
+    html += `</div>
+        <div class="date-input-row"><label>Arrived:</label><input type="date" value="${c.arrived_date||''}" onchange="updateContainerDate(${idx},'arrived_date',this.value)"></div>
+        <div class="date-input-row"><label>Terminal Paid:</label><input type="date" value="${c.terminal_date||''}" onchange="updateContainerDate(${idx},'terminal_date',this.value)"></div>
+        <div class="date-input-row"><label>Offloaded:</label><input type="date" value="${c.offload_date||''}" onchange="updateContainerDate(${idx},'offload_date',this.value)"></div>
+        <div class="date-input-row"><label>Returned:</label><input type="date" value="${c.return_date||''}" onchange="updateContainerDate(${idx},'return_date',this.value)"></div>
+        <div class="drive-link-row">
+          <input type="text" placeholder="Google Drive link for photo/video…" value="${c.drive_link||''}" onchange="updateContainerDrive(${idx}, this.value)">
+          ${c.drive_link ? `<a href="${c.drive_link}" target="_blank">Open ↗</a>` : ''}
+        </div>
+        ${waBtn}
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+    html += `<button class="add-container-btn" onclick="addContainer()">＋ Add Container</button>`;
+  }
+
+  // Audit trail
+  if (f.auditLog && f.auditLog.length && currentUser.role === 'admin') {
+    html += `<div class="section-title">Audit Trail</div>
+    <div class="audit-trail"><div class="audit-title">Recent Changes</div>`;
+    [...f.auditLog].reverse().forEach(e => { html += `<div class="audit-entry">${e}</div>`; });
+    html += `</div>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = html;
+}
+
+function toggleContainer(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function toggleCheck(itemId, canTick) {
+  if (!canTick) return;
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  const wasChecked = f.checklist[itemId];
+  if (wasChecked && !ROLES[currentUser.role].canUntick) return;
+  // Form M validation
+  if (itemId === 'formm' && !wasChecked && !f.formm) {
+    alert('Please enter a Form M number before ticking this item.');
+    return;
+  }
+  f.checklist[itemId] = !wasChecked;
+  const label = CHECKLIST_ITEMS.find(i => i.id === itemId)?.label || itemId;
+  addAudit(f, `${currentUser.name} ${f.checklist[itemId]?'checked':'unchecked'}: ${label}`);
+  saveData();
+  renderModalBody(f);
+  renderTable();
+}
+
+function toggleContainerCheck(idx, checkId) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  const c = f.containers[idx];
+  if (!c.checks) c.checks = {};
+  const was = c.checks[checkId];
+  if (was && !ROLES[currentUser.role].canUntick) return;
+  c.checks[checkId] = !was;
+  if (checkId === 'terminal' && c.checks[checkId] && !c.terminal_date) {
+    c.terminal_date = new Date().toISOString().split('T')[0];
+  }
+  addAudit(f, `${currentUser.name} ${c.checks[checkId]?'checked':'unchecked'} "${CONTAINER_CHECKS.find(cc=>cc.id===checkId)?.label}" for container ${c.num||idx+1}`);
+  saveData();
+  renderModalBody(f);
+  renderTable();
+}
+
+function updateContainerNum(idx, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  f.containers[idx].num = val;
+  saveData();
+}
+
+function updateContainerDate(idx, field, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  f.containers[idx][field] = val;
+  addAudit(f, `${currentUser.name} set ${field.replace('_',' ')} to ${val} for container ${f.containers[idx].num||idx+1}`);
+  saveData();
+  renderModalBody(f);
+  renderTable();
+}
+
+function updateContainerDrive(idx, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  f.containers[idx].drive_link = val;
+  saveData();
+}
+
+function updateETA(val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  const old = f.eta;
+  f.eta = val;
+  const entry = `${new Date().toLocaleDateString('en-GB')} — ${currentUser.name} changed ETA from ${old||'none'} to ${val}`;
+  if (!f.etaLog) f.etaLog = [];
+  f.etaLog.push(entry);
+  addAudit(f, entry);
+  saveData();
+  renderTable();
+}
+
+function addContainer() {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  if (!f.containers) f.containers = [];
+  f.containers.push({ id: `c_${Date.now()}`, num: '', checks: {}, arrived_date: '', offload_date: '', return_date: '', drive_link: '' });
+  addAudit(f, `${currentUser.name} added a container`);
+  saveData();
+  renderModalBody(f);
+}
+
+function addAudit(f, msg) {
+  if (!f.auditLog) f.auditLog = [];
+  f.auditLog.push(`${new Date().toLocaleString('en-GB')} — ${msg}`);
+}
+
+function saveFile() {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  const role = ROLES[currentUser.role];
+  if (role.canTickAll) {
+    ['formm','supplier','grade','pfi','bl','cgd','bank','agent'].forEach(field => {
+      const el = document.getElementById(`edit-${field}`);
+      if (el) {
+        if (el.value !== f[field]) addAudit(f, `${currentUser.name} updated ${field} to "${el.value}"`);
+        f[field] = el.value;
+      }
+    });
+  }
+  saveData();
+  renderTable();
+  closeFileModal();
+}
+
+function sendWhatsapp(fileNum, contNum, date, event) {
+  event.stopPropagation();
+  const d = date ? new Date(date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) : new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  const msg = `Terminal paid on ${d} for Container ${contNum} of File ${fileNum} - expect delivery soon`;
+  const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function updateContainerCheckDate(idx, checkId, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  const c = f.containers[idx];
+  if (!c.checkDates) c.checkDates = {};
+  c.checkDates[checkId] = val;
+  addAudit(f, `${currentUser.name} set date for "${CONTAINER_CHECKS.find(cc=>cc.id===checkId)?.label}" to ${formatDate(val)} on container ${c.num||idx+1}`);
+  saveData();
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function parseDisplayDate(str) {
+  // accepts dd/mm/yyyy
+  const parts = str.trim().split('/');
+  if (parts.length !== 3) return '';
+  const [d, m, y] = parts;
+  if (!d || !m || !y || y.length !== 4) return '';
+  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+}
+
+function updateCheckDateText(itemId, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  if (!f.checklistDates) f.checklistDates = {};
+  const parsed = parseDisplayDate(val);
+  if (val && !parsed) { alert('Please enter date as dd/mm/yyyy'); return; }
+  f.checklistDates[itemId] = parsed;
+  const label = CHECKLIST_ITEMS.find(i => i.id === itemId)?.label || itemId;
+  addAudit(f, `${currentUser.name} set date for "${label}" to ${val}`);
+  saveData();
+}
+
+function updateContainerCheckDateText(idx, checkId, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f || !f.containers[idx]) return;
+  const c = f.containers[idx];
+  if (!c.checkDates) c.checkDates = {};
+  const parsed = parseDisplayDate(val);
+  if (val && !parsed) { alert('Please enter date as dd/mm/yyyy'); return; }
+  c.checkDates[checkId] = parsed;
+  addAudit(f, `${currentUser.name} set date for "${CONTAINER_CHECKS.find(cc=>cc.id===checkId)?.label}" to ${val} on container ${c.num||idx+1}`);
+  saveData();
+}
+
+function updateCheckDate(itemId, val) {
+  const f = files.find(f => f.id === currentFileId);
+  if (!f) return;
+  if (!f.checklistDates) f.checklistDates = {};
+  f.checklistDates[itemId] = val;
+  const label = CHECKLIST_ITEMS.find(i => i.id === itemId)?.label || itemId;
+  addAudit(f, `${currentUser.name} set date for "${label}" to ${formatDate(val)}`);
+  saveData();
+  renderModalBody(f);
+}
+
+// Keyboard PIN input
+document.addEventListener('keydown', e => {
+  if (document.getElementById('login-screen').style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if (e.key === 'Backspace') pinDel();
+});
+
+// Init
+renderTable();
+</script>
+</body>
+</html>
